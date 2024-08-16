@@ -4,8 +4,8 @@ import android.util.Log
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.sp
 val ExpandableTextColor: Color @Composable get() = if (isSystemInDarkTheme()) Color.White else Color.Black
 val SeeMoreAndLessColor: Color @Composable get() = if (isSystemInDarkTheme()) Color.LightGray else Color.Gray
 
-/** 접혀있을 때 라인 */
+/** 접혀있을 때 라인 수*/
 private const val collaspLine = 3
 
 @Composable
@@ -41,17 +41,16 @@ fun ExpandableText(
     nickName: String? = null,
     text: String,
     onClickNickName: () -> Unit,
+    expandableTextColor: Color = ExpandableTextColor
 ) {
     // @formatter:off
     var isExpanded by remember { mutableStateOf(false) }
-    val textLayoutResultState = remember { mutableStateOf<TextLayoutResult?>(null) }
+    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
     var isClickable by remember { mutableStateOf(false) }
-    val textLayoutResult = textLayoutResultState.value
     val seeMoreandLessColor = SeeMoreAndLessColor
-    val expandableTextColor = ExpandableTextColor
 
-    //first we match the html tags and enable the links
-    val textWithLinks = buildAnnotatedString {
+    //닉네임 + 내용을 초기에 설정한 text 생성
+    var textWithMoreLess by remember { mutableStateOf(buildAnnotatedString {
         nickName?.let {
             withStyle(SpanStyle(color = expandableTextColor, fontWeight = FontWeight.Bold))
             {
@@ -62,24 +61,22 @@ fun ExpandableText(
         withStyle(SpanStyle(color = expandableTextColor)) {
             append(text)
         }
-    }
-    //then we create the Show more/less animation effect
-    var textWithMoreLess by remember { mutableStateOf(textWithLinks) }
+    }) }
 
     LaunchedEffect(textLayoutResult) {
-        if (textLayoutResult == null) return@LaunchedEffect
+        textLayoutResult?.let {
+            when {
+                // 텍스트 확장 상태
+                isExpanded -> {
+                    textWithMoreLess = originString(nickName, text, seeMoreandLessColor, expandableTextColor)
+                }
 
-        when {
-            // 텍스트 확장 상태
-            isExpanded -> {
-                textWithMoreLess = originString(nickName, text, seeMoreandLessColor, expandableTextColor)
-            }
-
-            // 텍스트가 펼쳐지지 않은 상태이고 최대 줄 수를 초과하는 경우
-            !isExpanded && textLayoutResult.hasVisualOverflow -> {
-                val lastCharIndex = textLayoutResult.getLineEnd(collaspLine-1)
-                textWithMoreLess = summarizedString(nickName, text, lastCharIndex, seeMoreandLessColor = seeMoreandLessColor, expandableTextColor = expandableTextColor)
-                isClickable = true
+                // 텍스트가 펼쳐지지 않은 상태이고 최대 줄 수를 초과하는 경우
+                !isExpanded && it.hasVisualOverflow -> {
+                    val lastCharIndex = it.getLineEnd(collaspLine-1)
+                    textWithMoreLess = summarizedString(nickName, text, lastCharIndex, seeMoreandLessColor = seeMoreandLessColor, expandableTextColor = expandableTextColor)
+                    isClickable = true
+                }
             }
         }
     }
@@ -120,7 +117,7 @@ fun ExpandableText(
                     }
                 },
                 maxLines = if (isExpanded) Int.MAX_VALUE else collaspLine,
-                onTextLayout = { textLayoutResultState.value = it },
+                onTextLayout = { textLayoutResult = it },
                 modifier = modifier.animateContentSize()
             )
         }
