@@ -170,7 +170,7 @@ fun summarizedString(
             append(" ")
             withStyle(SpanStyle(color = expandableTextColor)) {
                 // 내용 추가
-                append(text.substring(0, lastCharIndex)
+                append(text.substring(0, if(lastCharIndex > text.length) text.length else lastCharIndex)
                     .dropLast(showMoreString.length + nickName.length + 1) // ... more 추가를 위에 문장 자르기
                     .dropLastWhile { it == ' ' || it == '.' }) // 주의: 조정한 글자가 오버플로우되면 무한 루프 발생
             }
@@ -179,7 +179,7 @@ fun summarizedString(
         else {
             withStyle(SpanStyle(color = expandableTextColor)) {
                 // 내용 추가
-                append(text.substring(0, lastCharIndex)
+                append(text.substring(0, if(lastCharIndex > text.length) text.length else lastCharIndex)
                     .dropLast(showMoreString.length + 1)  // ... more 추가를 위에 문장 자르기
                     .dropLastWhile { it == ' ' || it == '.' }) // 주의: 조정한 글자가 오버플로우되면 무한 루프 발생
             }
